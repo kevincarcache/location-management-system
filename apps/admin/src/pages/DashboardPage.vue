@@ -5,7 +5,10 @@
         <p class="eyebrow">Operations</p>
         <h1>Location Management Admin</h1>
       </div>
-      <v-btn color="secondary" to="/locations">Gestionar ubicaciones</v-btn>
+      <div class="header-actions">
+        <v-btn color="secondary" to="/locations">Gestionar ubicaciones</v-btn>
+        <v-btn variant="outlined" @click="handleLogout">Salir</v-btn>
+      </div>
     </header>
 
     <section class="stats-grid">
@@ -25,3 +28,16 @@
   </div>
 </template>
 
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+
+import { useSessionStore } from '../stores/session'
+
+const router = useRouter()
+const session = useSessionStore()
+
+function handleLogout() {
+  session.logout()
+  router.push('/login')
+}
+</script>

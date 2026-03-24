@@ -18,16 +18,20 @@
     >
       <div class="location-card-top">
         <strong>{{ location.name }}</strong>
-        <span>{{ location.businessType }}</span>
+        <span>{{ businessTypeLabels[location.businessType] }}</span>
       </div>
       <p>{{ location.addressLine1 }}</p>
       <small>{{ location.city }}, {{ location.country }}</small>
+      <small v-if="location.descriptionShort" class="location-copy">
+        {{ location.descriptionShort }}
+      </small>
     </button>
   </aside>
 </template>
 
 <script setup lang="ts">
 import type { LocationSummary } from '@lms/types'
+import { businessTypeLabels } from '@lms/ui'
 
 const props = defineProps<{
   locations: LocationSummary[]

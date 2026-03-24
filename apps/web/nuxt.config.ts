@@ -2,7 +2,7 @@ import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-03-24',
-  css: ['~/assets/css/main.css'],
+  css: ['maplibre-gl/dist/maplibre-gl.css', '~/assets/css/main.css'],
   app: {
     head: {
       title: 'Location Management System',
