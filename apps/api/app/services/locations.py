@@ -202,6 +202,13 @@ def create_location(db: Session, payload: LocationCreate) -> LocationRead:
     return _serialize_location(location)
 
 
+def get_location(db: Session, location_id: str) -> LocationRead | None:
+    location = get_location_by_id(db, location_id)
+    if location is None:
+        return None
+    return _serialize_location(location)
+
+
 def update_location(db: Session, location_id: str, payload: LocationUpdate) -> LocationRead | None:
     location = get_location_by_id(db, location_id)
     if location is None:

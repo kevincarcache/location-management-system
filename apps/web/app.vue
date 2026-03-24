@@ -1,133 +1,100 @@
 <template>
-  <div class="shell">
-    <header class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Location Management System</p>
-        <h1>Encuentra la ubicación correcta para cada necesidad.</h1>
-        <p class="lede">
-          Explora sucursales, eventos, puntos de reciclaje, academias y servicios técnicos
-          desde una experiencia unificada.
-        </p>
-      </div>
-      <div class="filters">
-        <input
-          v-model="query"
-          class="search"
-          type="search"
-          placeholder="Buscar por nombre, ciudad o dirección"
-        />
-        <select v-model="businessType" class="search search-select">
-          <option value="all">Todos los tipos</option>
-          <option
-            v-for="option in businessTypeFilterOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </div>
-    </header>
-
-    <section v-if="pending" class="hero-card state-card">
-      <p class="eyebrow">Cargando</p>
-      <h2>Estamos preparando las ubicaciones disponibles.</h2>
-      <p class="lede">El catálogo se está consultando desde la API pública.</p>
-    </section>
-
-    <section v-else-if="error" class="hero-card state-card">
-      <p class="eyebrow">Conexión</p>
-      <h2>No pudimos cargar las ubicaciones.</h2>
-      <p class="lede">
-        Verifica que la API esté corriendo en {{ apiBase }} y vuelve a intentarlo.
-      </p>
-      <button class="primary-button" @click="refresh()">Reintentar</button>
-    </section>
-
-    <main v-else class="locator">
-      <LocationSidebar
-        :locations="filteredLocations"
-        :selected-slug="selectedSlug"
-        @select="selectedSlug = $event"
+  <v-app class="storefront-app" :data-theme="storeConfig?.theme_preset || 'storefront'">
+    <div class="storefront-layout">
+      <StorefrontHeader
+        :drawer="drawer ?? false"
+        :store-config="storeConfig"
+        @toggle-drawer="toggleDrawer"
+        @update:drawer="updateDrawer"
+        @navigate="navigateToSection"
       />
-      <LocationMap :locations="filteredLocations" :selected-slug="selectedSlug" />
-    </main>
-  </div>
+
+      <v-sheet tag="main" color="transparent" class="storefront-main">
+        <v-container class="storefront-stage py-4 py-md-8" fluid>
+          <v-container class="px-0 px-md-4" max-width="1480">
+            <StorefrontHero
+              :query="query ?? ''"
+              :store-config="storeConfig"
+              @update:query="updateQuery"
+            />
+
+            <StorefrontStatus
+              v-if="pendingConfig || pendingLocations"
+              mode="loading"
+            />
+
+            <StorefrontStatus
+              v-else-if="configError || locationsError"
+              mode="error"
+              @retry="retryAll"
+            />
+
+            <v-sheet
+              v-else
+              id="locations"
+              rounded="md"
+              class="locator-workspace pa-3 pa-md-4"
+            >
+              <v-row class="ga-0">
+                <v-col cols="12" lg="4" xl="3" class="pe-lg-4 mb-4 mb-lg-0">
+                  <LocationSidebar
+                    :locations="filteredLocations ?? []"
+                    :selected-slug="selectedSlug ?? null"
+                    :title="storeConfig?.menu_label || 'Ubicaciones'"
+                    @select="updateSelectedSlug"
+                  />
+                </v-col>
+
+                <v-col id="mapa" cols="12" lg="8" xl="9">
+                  <LocationMap
+                    :locations="filteredLocations ?? []"
+                    :selected-slug="selectedSlug ?? null"
+                    @select="updateSelectedSlug"
+                  />
+                </v-col>
+              </v-row>
+            </v-sheet>
+          </v-container>
+        </v-container>
+      </v-sheet>
+
+      <StorefrontFooter
+        :resolved-storeview="resolvedStoreview"
+        :store-config="storeConfig"
+      />
+    </div>
+  </v-app>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-
-import type { BusinessType } from '@lms/types'
-import { businessTypeLabels } from '@lms/ui'
-import { useLocations } from './composables/useLocations'
-
-const route = useRoute()
-const router = useRouter()
-const config = useRuntimeConfig()
-
-const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
-const businessType = ref<BusinessType | 'all'>(
-  typeof route.query.type === 'string' &&
-    route.query.type in businessTypeLabels
-    ? (route.query.type as BusinessType)
-    : 'all'
-)
-const selectedSlug = ref<string | null>(
-  typeof route.query.selected === 'string' ? route.query.selected : null
-)
-
-const { locations, pending, error, refresh } = await useLocations()
-const apiBase = config.public.apiBase
-
-const businessTypeFilterOptions = Object.entries(businessTypeLabels).map(([value, label]) => ({
-  value: value as BusinessType,
-  label
-}))
-
-const filteredLocations = computed(() => {
-  const normalized = query.value.trim().toLowerCase()
-  return locations.value.filter((location) => {
-    const matchesQuery =
-      !normalized ||
-      location.name.toLowerCase().includes(normalized) ||
-      location.city.toLowerCase().includes(normalized) ||
-      location.addressLine1.toLowerCase().includes(normalized)
-
-    const matchesType =
-      businessType.value === 'all' || location.businessType === businessType.value
-
-    return matchesQuery && matchesType
-  })
-})
-
-watch(
+const {
+  configError,
+  drawer,
   filteredLocations,
-  (items) => {
-    if (!items.length) {
-      selectedSlug.value = null
-      return
-    }
+  locationsError,
+  navigateToSection,
+  pendingConfig,
+  pendingLocations,
+  query,
+  resolvedStoreview,
+  retryAll,
+  selectedSlug,
+  storeConfig,
+  toggleDrawer,
+  updateDrawer,
+  updateQuery,
+  updateSelectedSlug
+} = await useStorefrontPage()
 
-    const firstItem = items[0]
-    if (!selectedSlug.value || !items.some((item) => item.slug === selectedSlug.value)) {
-      selectedSlug.value = firstItem?.slug ?? null
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  [query, businessType, selectedSlug],
-  async ([nextQuery, nextType, nextSelected]) => {
-    await router.replace({
-      query: {
-        ...(nextQuery ? { q: nextQuery } : {}),
-        ...(nextType !== 'all' ? { type: nextType } : {}),
-        ...(nextSelected ? { selected: nextSelected } : {})
+useHead(
+  computed(() => ({
+    title: storeConfig.value?.brand_name || 'Storefront',
+    meta: [
+      {
+        name: 'description',
+        content: storeConfig.value?.business_description || 'Ubicaciones y puntos de atención.'
       }
-    })
-  },
-  { flush: 'post' }
+    ]
+  }))
 )
 </script>

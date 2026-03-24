@@ -13,13 +13,20 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     bootstrap_on_startup: bool = True
+    storefront_slug: str | None = None
     admin_email: str = "admin@example.com"
     admin_password: str = "ChangeMe123!"
     admin_full_name: str = "Platform Admin"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",
+            "http://localhost:3100",
             "http://localhost:5173",
+            "http://localhost:4173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3100",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:4173",
         ]
     )
 

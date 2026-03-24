@@ -1,9 +1,11 @@
 <template>
   <div class="auth-shell">
     <v-card class="auth-card" elevation="0">
-      <p class="eyebrow">Admin access</p>
-      <h1>Ingresa al panel de localizaciones</h1>
-      <p class="copy">Autenticación propia conectada al backend FastAPI y al usuario seeded.</p>
+      <p class="eyebrow">Panel de administración</p>
+      <h1>Ingresa al centro de operación</h1>
+      <p class="copy">
+        Accede al panel desde donde se administra el storefront, las localizaciones y las importaciones.
+      </p>
 
       <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">
         {{ errorMessage }}
