@@ -185,39 +185,66 @@
 ## Implementation Phases
 
 ### Phase 1: Monorepo Bootstrap
-- Create workspace structure
-- Configure `pnpm`, `turbo`, shared config, and scripts
-- Add Docker and environment templates
-- Establish CI baseline
+- Status: Completed
+- Done:
+  - Created workspace structure
+  - Configured `pnpm`, `turbo`, shared config, and scripts
+  - Added Docker and environment templates
+  - Established CI baseline
 
 ### Phase 2: Backend Foundation
-- Implement FastAPI app structure
-- Create database schema and initial migrations
-- Add admin auth
-- Add `Location` model and CRUD foundation
-- Add admin seed flow
+- Status: Completed
+- Done:
+  - Implemented FastAPI app structure
+  - Created database schema and initial migrations
+  - Added admin auth
+  - Added `Location` model and CRUD foundation
+  - Added admin seed flow
 
 ### Phase 3: Admin App
-- Build admin shell
-- Implement login and protected routes
-- Build CRUD screens for locations
-- Apply shared visual system and theme
+- Status: Completed
+- Done:
+  - Built the initial admin shell
+  - Applied the shared visual system and theme
+  - Implemented login and protected routes
+  - Connected location CRUD screens to the real API
 
 ### Phase 4: CSV Imports
-- Implement backend import pipeline
-- Build admin CSV workflow
-- Add validation and import result reporting
+- Status: Completed
+- Done:
+  - Implemented the backend import pipeline with CSV parsing and row-level error capture
+  - Added the initial admin CSV upload workflow and import summary rendering
+  - Added template download
+  - Added preview validation before confirm
+  - Expanded automated coverage for import scenarios
 
 ### Phase 5: Public Locator
+- Status: In Progress
+- Done:
+  - Built the initial Nuxt store-locator shell
+  - Added search, list, and selection scaffolding
+  - Connected the public web to the real API
+  - Added query-param persistence for search, type, and selected location
+  - Added loading and error states for the public locator
+  - Integrated a real MapLibre map with marker rendering
+  - Added map fly-to behavior and marker highlight on selection
+- Next:
+  - Add richer popups or detail cards on marker interaction
+  - Fine-tune viewport behavior for larger result sets
 - Build Nuxt store-locator experience
 - Integrate map, list, search, filters, and selection sync
 - Add query-param persistence and responsive behavior
 
 ### Phase 6: Hardening
-- Add representative seed data
-- Expand tests and E2E coverage
-- Polish product presentation
-- Close integration gaps for initial deployment
+- Status: Completed
+- Done:
+  - Expanded representative seed data across multiple business types
+  - Added initial Playwright E2E coverage for public locator and admin login
+  - Added E2E coverage for manual location creation and CSV import
+  - Improved local scripts and documentation for reproducible validation
+
+## Plan Status
+- Status: Completed for the current MVP scope
 
 ## Testing and Acceptance
 

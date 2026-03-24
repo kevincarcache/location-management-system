@@ -59,6 +59,11 @@ def get_location_by_slug(db: Session, slug: str, *, public_only: bool = False) -
     return db.scalar(statement)
 
 
+def get_location_by_external_id(db: Session, external_id: str) -> Location | None:
+    statement = select(Location).where(Location.external_id == external_id)
+    return db.scalar(statement)
+
+
 def create_location(db: Session, payload: LocationCreate) -> Location:
     location = Location(**payload.model_dump())
     db.add(location)
