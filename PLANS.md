@@ -1,263 +1,187 @@
-# Location Management System Plan
+# PLANS.md
 
-## Product Goal
-- Build a reusable Location Management System for different business types: branches, nearby events, recycling points, academies, and technical service centers.
-- Let administrators manage locations in an admin panel and publish them to a public-facing map experience.
-- Deliver a polished product feel, not a demo, with a custom visual identity and a Vuetify theme that moves away from default Material Design colors.
+## Visión actual del producto
+- El frontend público debe comportarse como el sitio real de un negocio específico, no como un "Location Management System" genérico.
+- El admin es el único lugar donde debe vivir el branding técnico del producto y desde donde se administran localizaciones, configuración del negocio, importaciones y reportes.
+- El contexto del negocio se resuelve por `storeview` con esta precedencia:
+  - variable de entorno
+  - parámetro en la URL
+  - primer storeview existente en base de datos
+- El seed inicial debe garantizar que siempre exista un storeview `default`.
 
-## Target Architecture
-- Monorepo managed with `pnpm workspaces` and `turbo`.
-- Primary apps:
-  - `apps/api`: Python backend with `FastAPI`
-  - `apps/web`: public-facing `Nuxt` application
-  - `apps/admin`: admin panel built with `Vue 3 + Vite + Vuetify`
-- Shared packages:
-  - `packages/ui`: shared tokens, theme primitives, and reusable components when beneficial
-  - `packages/types`: shared contracts and typed API models
-  - `packages/config`: shared linting, TypeScript, and build configuration
-- Data layer:
-  - `PostgreSQL` as the primary database
-  - `SQLAlchemy 2.x`, `Alembic`, `Pydantic v2`, `psycopg`
-- Local development:
-  - `docker compose` for `postgres`
-  - optional API container for full local parity
-- Public map stack:
-  - `MapLibre + OpenStreetMap`
+## Estado general
+- Estado: En implementación avanzada
+- Base técnica completada:
+  - monorepo con `pnpm + turbo`
+  - backend `FastAPI + PostgreSQL + SQLAlchemy + Alembic`
+  - frontend público en `Nuxt`
+  - panel admin en `Vue 3 + Vite + Vuetify`
+  - importación CSV con preview y confirmación
+  - mapa público con `MapLibre + OpenStreetMap`
 
-## Core Functional Model
+## Decisiones rectoras
 
-### Main Entity: `Location`
-- `id`
-- `slug`
-- `name`
-- `business_type`
-- `status`
-- `description_short`
-- `description_long`
-- `address_line_1`
-- `address_line_2`
-- `city`
-- `region`
-- `country`
-- `postal_code`
-- `latitude`
-- `longitude`
-- `phone`
-- `email`
-- `website`
-- `opening_hours`
-- `services` or `tags`
-- `featured`
-- `visible_from`
-- `visible_until`
-- `external_id`
-- `created_at`
-- `updated_at`
+### Storeview y storefront
+- El frontend público usa `StoreConfig` como fuente principal de identidad visual y contenido.
+- `Location.business_type` se mantiene como dato interno y filtro operativo.
+- Si el storefront ya fija un solo tipo de localización, el frontend no debe exponer ese tipo como filtro visible principal.
+- El storeview `default` se crea automáticamente en seed.
 
-### Supporting Entities
+### Backend
+- Se incorpora `StoreConfig` como entidad persistida.
+- Se expone configuración pública del storefront y configuración editable desde admin.
+- La resolución de storeview se hace con:
+  - `API_STOREFRONT_SLUG`
+  - `storeview` en request
+  - primer registro disponible
+- El backend sigue persistiendo `latitude` y `longitude`, pero el admin deja de capturarlas como campos manuales.
+
+### Frontend público
+- El layout público debe parecerse a un sitio comercial:
+  - header
+  - contenido principal
+  - footer
+- La columna izquierda conserva el listado de localizaciones.
+- El mapa ocupa todo el espacio restante en la derecha.
+- Al seleccionar una ubicación se muestra una tarjeta superpuesta sobre el mapa.
+- No se muestran latitud/longitud ni copy técnico obvio.
+
+### Admin
+- El admin debe verse como panel convencional:
+  - menú lateral izquierdo
+  - header superior
+  - footer
+- La creación y edición de localizaciones ocurre en página dedicada, no en modal.
+- Los campos del formulario deben ir en flujo vertical.
+- La ubicación se define con:
+  - búsqueda geográfica
+  - ajuste manual de pin sobre el mapa
+
+## Modelo funcional
+
+### Entidades activas
 - `AdminUser`
+- `Location`
 - `LocationImportJob`
 - `LocationImportRowError`
+- `StoreConfig`
 
-### Business Flexibility
-- The system is multi-category and generic by design.
-- `business_type` must be configurable so the same product can be adapted to different business contexts without changing the core data model.
-- Multi-tenant support is out of scope for v1. Each deployment serves a single organization.
+### `StoreConfig`
+- `slug`
+- `brand_name`
+- `business_description`
+- `theme_preset`
+- `business_type`
+- `logo_url`
+- `hero_title`
+- `hero_subtitle`
+- `menu_label`
+- `footer_text`
 
-## Backend Plan
+## APIs clave
 
-### Modules
-- `auth`
-- `locations`
-- `imports`
-- `taxonomy`
-- `health`
-
-### Authentication
-- Custom auth for admin users.
-- Email/password login.
-- Access token + refresh token flow using JWT.
-- Initial seeded admin user created from environment variables or a bootstrap command.
-- Production seed focuses on the initial admin account only.
-
-### Public API
+### Públicas
+- `GET /api/public/store-config`
 - `GET /api/public/locations`
-  - supports search by name, city, or address
-  - supports filtering by `business_type`, tags, city, and active status
-  - supports geospatial filtering for nearby searches
 - `GET /api/public/locations/:slug`
-  - returns location detail for public rendering
-- Optional geospatial support:
-  - radius-based or bounding-box filtering when needed for map view performance
 
-### Admin API
+### Admin
 - `POST /api/admin/auth/login`
 - `POST /api/admin/auth/refresh`
 - `GET /api/admin/locations`
+- `GET /api/admin/locations/:id`
 - `POST /api/admin/locations`
 - `PATCH /api/admin/locations/:id`
 - `DELETE /api/admin/locations/:id`
+- `GET /api/admin/store-configs`
+- `POST /api/admin/store-configs`
+- `PATCH /api/admin/store-configs/:id`
+- `GET /api/admin/geocoding/search`
+- `POST /api/admin/imports/locations/csv/preview`
 - `POST /api/admin/imports/locations/csv`
-- `GET /api/admin/imports/:id`
+- `GET /api/admin/imports/locations/csv/template`
 
-### CSV Import
-- Upload CSV from the admin panel.
-- Validate required columns before import.
-- Process rows idempotently using `external_id` or a fallback matching strategy.
-- Track import job summaries and row-level errors.
-- Support:
-  - template download
-  - preview validation
-  - create/update/reject counts
+## Fases de esta nueva etapa
 
-### CSV Contract
-- Required columns:
-  - `external_id`
-  - `name`
-  - `business_type`
-  - `address_line_1`
-  - `city`
-  - `country`
-  - `latitude`
-  - `longitude`
-- Optional columns:
-  - contact fields
-  - opening hours
-  - tags or services
+### Fase A: Fundaciones de storefront
+- Estado: Completada
+- Entregables:
+  - modelo `StoreConfig`
+  - seed de storeview `default`
+  - resolución por env, URL y fallback a primer registro
+  - endpoint público de configuración
+  - filtrado público de localizaciones por `business_type` del storefront
 
-## Public Frontend Plan
+### Fase B: Rediseño del admin
+- Estado: Completada
+- Entregables:
+  - shell con menú lateral, header y footer
+  - dashboard realineado
+  - páginas separadas para:
+    - listado de localizaciones
+    - editor de localizaciones
+    - tipos de localización
+    - reportes
+    - configuración de la tienda
 
-### Stack
-- `Nuxt` latest stable release
-- SSR or hybrid rendering
-- `MapLibre` for map rendering
+### Fase C: Editor de localizaciones con mapa
+- Estado: Completada
+- Entregables:
+  - formulario vertical en página completa
+  - búsqueda geográfica desde admin
+  - selección de coordenadas con pin en mapa
+  - remoción de inputs manuales de latitud/longitud
 
-### UX Structure
-- Left sidebar with a searchable, filterable list of locations
-- Top search bar for quick lookup
-- Right-side map panel
-- Synchronized interactions between list items and map markers
-- On selection:
-  - center the map
-  - highlight the selected card
-  - highlight the selected pin
+### Fase D: Reenfoque del frontend público
+- Estado: Completada en su alcance actual
+- Entregables listos:
+  - branding y contenido cargados desde `StoreConfig`
+  - resolución de storeview desde frontend
+  - header y footer orientados a storefront
+  - shell público migrado a componentes base de Vuetify
+  - sidebar izquierda + mapa dominante a la derecha
+  - tarjeta superpuesta de la ubicación seleccionada
+  - eliminación de texto técnico innecesario y lat/lng visibles
+- Pendiente de pulido:
+  - ampliar presets visuales y profundidad del tema por storefront
+  - refinar la tarjeta del mapa para anclarla con mayor precisión visual al marcador seleccionado
 
-### Required Behaviors
-- Search by name, city, or address
-- Filter by business type
-- Display empty states and API error states cleanly
-- Persist state in query params for shareable deep links
-- Render responsively on desktop and mobile
+### Fase E: Hardening y polish
+- Estado: En progreso
+- Pendiente:
+  - ampliar E2E del nuevo flujo de configuración de tienda
+  - cubrir creación/edición con mapa en navegador
+  - endurecer reportes y métricas del admin
+  - completar documentación visual y operativa de storeviews
 
-### Product Feel
-- Use a custom palette distinct from default Material colors
-- Visual design should feel like a production product, not a generic prototype
-- Focus on clarity, trust, and usability
+## Sitemap objetivo del admin
+- Dashboard
+- Gestión de localizaciones
+  - Lista de localizaciones
+  - Gestionar tipos de localizaciones
+- Reportes
+- Configuración de la tienda
 
-## Admin Frontend Plan
+## Criterios de aceptación de esta etapa
+- Existe un storeview `default` luego del seed.
+- El frontend público puede resolver el storeview por env, por URL o por fallback.
+- El branding y el contenido del storefront se pueden editar desde admin.
+- El branding técnico "Location Management System" solo aparece en admin.
+- El formulario de localizaciones funciona en página completa.
+- La ubicación de una localización se define con mapa y no con inputs de lat/lng.
+- El mapa público muestra una tarjeta contextual al seleccionar una ubicación.
 
-### Stack
-- `Vue 3 + Vite + Vuetify`
+## Validación actual
+- `pnpm lint`: pasando
+- `uv run pytest`: pasando
+- Cobertura backend añadida para:
+  - seed de `StoreConfig`
+  - precedencia de resolución del storeview
 
-### Initial Sections
-- Login
-- Basic dashboard
-- Locations list
-- Create/edit location form
-- CSV import flow
-- Admin session or profile area
-
-### CSV Flow
-- Download CSV template
-- Upload file
-- Preview validation feedback
-- Confirm import
-- Show import results:
-  - created rows
-  - updated rows
-  - rejected rows
-
-### Design Direction
-- Keep the UI clear and operationally efficient
-- Define a custom Vuetify theme with brand-oriented colors
-- Treat the admin as a real internal tool, not a temporary back office
-
-## Implementation Phases
-
-### Phase 1: Monorepo Bootstrap
-- Create workspace structure
-- Configure `pnpm`, `turbo`, shared config, and scripts
-- Add Docker and environment templates
-- Establish CI baseline
-
-### Phase 2: Backend Foundation
-- Implement FastAPI app structure
-- Create database schema and initial migrations
-- Add admin auth
-- Add `Location` model and CRUD foundation
-- Add admin seed flow
-
-### Phase 3: Admin App
-- Build admin shell
-- Implement login and protected routes
-- Build CRUD screens for locations
-- Apply shared visual system and theme
-
-### Phase 4: CSV Imports
-- Implement backend import pipeline
-- Build admin CSV workflow
-- Add validation and import result reporting
-
-### Phase 5: Public Locator
-- Build Nuxt store-locator experience
-- Integrate map, list, search, filters, and selection sync
-- Add query-param persistence and responsive behavior
-
-### Phase 6: Hardening
-- Add representative seed data
-- Expand tests and E2E coverage
-- Polish product presentation
-- Close integration gaps for initial deployment
-
-## Testing and Acceptance
-
-### Backend
-- Unit tests for validation, auth, and import parsing
-- API tests for:
-  - login
-  - refresh token flow
-  - location CRUD
-  - CSV import
-
-### Admin
-- Form tests for critical fields and validation
-- Login flow coverage
-- CSV import flow coverage
-
-### Public Web
-- Search behavior
-- Location selection behavior
-- List/map synchronization
-- Persistent query params
-
-### End-to-End
-- Seeded admin can log in
-- Admin can create a location manually
-- Admin can import locations via CSV
-- Imported or created locations appear on the public frontend
-
-## Acceptance Criteria
-- A seeded admin user can access the admin in deployed environments.
-- Locations can be created manually or imported through CSV.
-- Public frontend displays active locations from the API.
-- Map and list stay synchronized during interaction.
-- The visual system feels consistent and product-ready.
-- The full solution can run locally with repeatable setup steps.
-
-## Assumptions and Defaults
-- `pnpm + Turbo` is the default monorepo tooling.
-- Authentication is implemented in-house for v1.
-- The public map uses `MapLibre + OpenStreetMap`.
-- `Nuxt` powers the public site and `Vue 3 + Vuetify` powers the admin.
-- No mobile app is included in v1.
-- No multi-organization support is included in v1.
+## Siguiente foco recomendado
+- Completar el pulido visual final del storefront público.
+- Ampliar presets y tokens de tema por storefront.
+- Añadir E2E del flujo completo:
+  - editar configuración de tienda
+  - crear localización con mapa
+  - verificar render correcto en el storefront resuelto

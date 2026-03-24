@@ -5,14 +5,18 @@
   "packageManager": "pnpm@10.25.0",
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:api": "pnpm --filter @lms/api dev",
+    "dev:web": "pnpm --filter @lms/web dev",
+    "dev:admin": "pnpm --filter @lms/admin dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:e2e": "playwright test",
     "format": "turbo run format"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "turbo": "^2.5.0"
   }
 }
-

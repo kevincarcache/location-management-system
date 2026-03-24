@@ -17,4 +17,6 @@ htmlcov
 .DS_Store
 apps/api/.venv
 apps/api/alembic/versions
+test-results/
+output/
 
