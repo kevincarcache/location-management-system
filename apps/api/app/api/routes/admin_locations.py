@@ -3,7 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.location import LocationCreate, LocationRead, LocationUpdate
-from app.services.locations import create_location, delete_location, list_locations, update_location
+from app.services.locations import (
+    create_location,
+    delete_location,
+    get_location,
+    list_locations,
+    update_location,
+)
 
 router = APIRouter()
 
@@ -11,6 +17,14 @@ router = APIRouter()
 @router.get("", response_model=list[LocationRead])
 async def get_locations(db: Session = Depends(get_db)) -> list[LocationRead]:
     return list_locations(db)
+
+
+@router.get("/{location_id}", response_model=LocationRead)
+async def get_location_detail(location_id: str, db: Session = Depends(get_db)) -> LocationRead:
+    location = get_location(db, location_id)
+    if location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
+    return location
 
 
 @router.post("", response_model=LocationRead, status_code=201)

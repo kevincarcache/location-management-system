@@ -1,53 +1,83 @@
 <template>
-  <section class="map-panel">
-    <div class="map-layout">
-      <div class="map-stage">
-        <div ref="mapContainer" class="map-canvas" />
-        <div class="map-overlay">
-          <p class="eyebrow">Mapa interactivo</p>
-          <h2>{{ selectedLocation?.name || 'Selecciona una ubicación' }}</h2>
-          <p>
-            {{
-              selectedLocation?.descriptionShort ||
-              'Explora la lista y selecciona una ubicación para centrar el mapa.'
-            }}
-          </p>
-        </div>
+  <v-sheet rounded="md" class="map-card">
+    <div class="map-shell">
+      <div class="map-surface">
+        <div v-if="!mapUnavailable" ref="mapContainer" class="map-canvas" />
+        <div v-else class="map-fallback-surface" aria-hidden="true" />
       </div>
 
-      <div class="map-sidebar">
-        <p class="eyebrow">Mapa interactivo</p>
-        <h2>{{ selectedLocation?.name || 'Selecciona una ubicación' }}</h2>
-        <p>
-          {{
-            selectedLocation?.descriptionShort ||
-            'Explora la lista y selecciona una ubicación para centrar el mapa.'
-          }}
-        </p>
-        <dl v-if="selectedLocation" class="map-details">
-          <div>
-            <dt>Dirección</dt>
-            <dd>{{ selectedLocation.addressLine1 }}</dd>
-          </div>
-          <div>
-            <dt>Ciudad</dt>
-            <dd>{{ selectedLocation.city }}, {{ selectedLocation.country }}</dd>
-          </div>
-        </dl>
+      <div class="map-summary">
+        <v-card
+          rounded="md"
+          elevation="0"
+          class="map-summary-card"
+        >
+          <v-card-item>
+            <template #prepend>
+              <v-avatar size="40" color="secondary" variant="tonal">
+                <v-icon icon="mdi-map-marker-radius" />
+              </v-avatar>
+            </template>
+            <template #title>
+              <span class="text-h6">
+                {{ selectedLocation?.name || 'Selecciona una ubicación' }}
+              </span>
+            </template>
+            <template #subtitle>
+              <span class="text-body-2 text-medium-emphasis">
+                {{ selectedLocation ? `${selectedLocation.city}, ${selectedLocation.country}` : 'Explora la lista para ver detalles.' }}
+              </span>
+            </template>
+          </v-card-item>
 
-        <ul class="map-list">
-          <li
-            v-for="location in locations"
-            :key="location.id"
-            :class="{ active: location.slug === selectedSlug }"
-          >
-            <span>{{ location.name }}</span>
-            <small>{{ location.latitude }}, {{ location.longitude }}</small>
-          </li>
-        </ul>
+          <v-card-text class="pt-0">
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              {{
+                selectedLocation?.descriptionShort ||
+                'Explora la lista y selecciona una ubicación para centrar el mapa.'
+              }}
+            </p>
+
+            <v-alert
+              v-if="mapUnavailable"
+              type="warning"
+              variant="tonal"
+              rounded="md"
+              density="comfortable"
+              class="mb-4"
+            >
+              El mapa interactivo no está disponible en este entorno, pero puedes seguir explorando
+              la ubicación seleccionada desde el listado.
+            </v-alert>
+
+            <v-list
+              v-if="selectedLocation"
+              density="compact"
+              class="bg-transparent pa-0"
+            >
+              <v-list-item class="px-0">
+                <template #prepend>
+                  <v-icon icon="mdi-map-marker-outline" color="secondary" />
+                </template>
+                <v-list-item-title>Dirección</v-list-item-title>
+                <v-list-item-subtitle>{{ selectedLocation.addressLine1 }}</v-list-item-subtitle>
+              </v-list-item>
+
+              <v-list-item class="px-0">
+                <template #prepend>
+                  <v-icon icon="mdi-city-variant-outline" color="secondary" />
+                </template>
+                <v-list-item-title>Ubicación</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ selectedLocation.city }}, {{ selectedLocation.country }}
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
       </div>
     </div>
-  </section>
+  </v-sheet>
 </template>
 
 <script setup lang="ts">
@@ -62,10 +92,13 @@ type MarkerInstance = {
   getElement: () => HTMLElement
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   locations: LocationSummary[]
   selectedSlug: string | null
-}>()
+}>(), {
+  locations: () => [],
+  selectedSlug: null
+})
 
 const emit = defineEmits<{
   select: [slug: string]
@@ -74,6 +107,7 @@ const emit = defineEmits<{
 const mapContainer = ref<HTMLDivElement | null>(null)
 const map = ref<any>(null)
 const maplibre = ref<MapLibreModule | null>(null)
+const mapUnavailable = ref(false)
 const markers = new Map<string, MarkerInstance>()
 
 const selectedLocation = computed(() =>
@@ -85,39 +119,51 @@ async function initializeMap() {
     return
   }
 
-  maplibre.value = await import('maplibre-gl')
+  try {
+    maplibre.value = await import('maplibre-gl')
 
-  map.value = new maplibre.value.Map({
-    container: mapContainer.value,
-    style: {
-      version: 8,
-      sources: {
-        osm: {
-          type: 'raster',
-          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '&copy; OpenStreetMap contributors'
-        }
+    map.value = new maplibre.value.Map({
+      container: mapContainer.value,
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap contributors'
+          }
+        },
+        layers: [
+          {
+            id: 'osm',
+            type: 'raster',
+            source: 'osm'
+          }
+        ]
       },
-      layers: [
-        {
-          id: 'osm',
-          type: 'raster',
-          source: 'osm'
-        }
-      ]
-    },
-    center: [-79.5199, 8.9824],
-    zoom: 10.5
-  })
+      center: [-79.5199, 8.9824],
+      zoom: 10.5
+    })
 
-  map.value.addControl(new maplibre.value.NavigationControl({ visualizePitch: true }), 'top-right')
-  syncMarkers()
-  fitToLocations()
+    map.value.addControl(
+      new maplibre.value.NavigationControl({ visualizePitch: true }),
+      'top-right'
+    )
+    syncMarkers()
+    fitToLocations()
+  } catch (error) {
+    console.warn('Map initialization failed, falling back to static location panel.', error)
+    mapUnavailable.value = true
+    map.value?.remove()
+    map.value = null
+    maplibre.value = null
+    markers.clear()
+  }
 }
 
 function syncMarkers() {
-  if (!map.value || !maplibre.value || !import.meta.client) {
+  if (!map.value || !maplibre.value || !import.meta.client || mapUnavailable.value) {
     return
   }
 
@@ -158,7 +204,7 @@ function updateMarkerElement(element: HTMLElement, isActive: boolean) {
 }
 
 function focusSelectedLocation() {
-  if (!map.value || !selectedLocation.value) {
+  if (!map.value || !selectedLocation.value || mapUnavailable.value) {
     return
   }
 
@@ -170,7 +216,7 @@ function focusSelectedLocation() {
 }
 
 function fitToLocations() {
-  if (!map.value || !maplibre.value || !props.locations.length) {
+  if (!map.value || !maplibre.value || !props.locations.length || mapUnavailable.value) {
     return
   }
 

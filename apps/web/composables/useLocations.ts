@@ -34,18 +34,22 @@ function mapLocation(location: ApiLocation): LocationSummary {
   }
 }
 
-export async function useLocations() {
+export async function useLocations(storeview: MaybeRefOrGetter<string | null>) {
   const config = useRuntimeConfig()
+  const requestedSlug = computed(() => toValue(storeview) || null)
 
-  const { data, pending, error, refresh } = await useFetch<ApiLocation[]>(
-    '/api/public/locations',
-    {
-      baseURL: config.public.apiBase,
-      default: () => []
-    }
-  )
+  const { data, pending, error, refresh } = await useFetch<ApiLocation[]>('/api/public/locations', {
+    baseURL: config.public.apiBase,
+    query: computed(() => {
+      const slug = requestedSlug.value
+      return slug ? { storeview: slug } : {}
+    }),
+    default: () => [],
+    key: computed(() => `locations:${requestedSlug.value ?? 'default'}`),
+    watch: [requestedSlug]
+  })
 
-  const locations = computed<LocationSummary[]>(() => data.value.map(mapLocation))
+  const locations = computed<LocationSummary[]>(() => (data.value ?? []).map(mapLocation))
 
   return {
     locations,

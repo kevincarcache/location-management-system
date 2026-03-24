@@ -3,4 +3,3 @@
     <router-view />
   </v-app>
 </template>
-

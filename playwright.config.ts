@@ -7,7 +7,7 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: 'http://localhost:3100',
     trace: 'on-first-retry'
   },
   webServer: [
@@ -19,15 +19,15 @@ export default defineConfig({
       cwd: '.'
     },
     {
-      command: 'pnpm dev:web',
-      port: 3000,
+      command: 'pnpm --filter @lms/web exec nuxt dev --host localhost --port 3100',
+      port: 3100,
       reuseExistingServer: true,
       timeout: 120_000,
       cwd: '.'
     },
     {
-      command: 'pnpm dev:admin',
-      port: 5173,
+      command: 'pnpm --filter @lms/admin exec vite --host localhost --port 4173',
+      port: 4173,
       reuseExistingServer: true,
       timeout: 120_000,
       cwd: '.'

@@ -45,6 +45,40 @@ export interface ApiLocation {
   external_id?: string | null
 }
 
+export interface StoreConfig {
+  id: string
+  slug: string
+  brand_name: string
+  business_description: string
+  theme_preset: string
+  business_type: ApiBusinessType
+  logo_url?: string | null
+  hero_title: string
+  hero_subtitle: string
+  menu_label: string
+  footer_text: string
+}
+
+export interface StoreConfigPayload {
+  slug: string
+  brand_name: string
+  business_description: string
+  theme_preset: string
+  business_type: ApiBusinessType
+  logo_url?: string | null
+  hero_title: string
+  hero_subtitle: string
+  menu_label: string
+  footer_text: string
+}
+
+export interface GeocodingResult {
+  name: string
+  address: string
+  latitude: number
+  longitude: number
+}
+
 export interface LocationFormPayload {
   slug: string
   name: string
@@ -167,6 +201,10 @@ export function getLocations(token: string): Promise<ApiLocation[]> {
   return request<ApiLocation[]>('/api/admin/locations', {}, token)
 }
 
+export function getLocation(token: string, locationId: string): Promise<ApiLocation> {
+  return request<ApiLocation>(`/api/admin/locations/${locationId}`, {}, token)
+}
+
 export function createLocation(token: string, payload: LocationFormPayload): Promise<ApiLocation> {
   return request<ApiLocation>(
     '/api/admin/locations',
@@ -224,4 +262,39 @@ export async function downloadLocationsTemplate(token: string): Promise<Blob> {
   }
 
   return response.blob()
+}
+
+export function getStoreConfigs(token: string): Promise<StoreConfig[]> {
+  return request<StoreConfig[]>('/api/admin/store-configs', {}, token)
+}
+
+export function createStoreConfig(token: string, payload: StoreConfigPayload): Promise<StoreConfig> {
+  return request<StoreConfig>(
+    '/api/admin/store-configs',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    },
+    token
+  )
+}
+
+export function updateStoreConfig(
+  token: string,
+  storeConfigId: string,
+  payload: Partial<StoreConfigPayload>
+): Promise<StoreConfig> {
+  return request<StoreConfig>(
+    `/api/admin/store-configs/${storeConfigId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    },
+    token
+  )
+}
+
+export function searchGeocoding(token: string, query: string): Promise<GeocodingResult[]> {
+  const params = new URLSearchParams({ query })
+  return request<GeocodingResult[]>(`/api/admin/geocoding/search?${params.toString()}`, {}, token)
 }
