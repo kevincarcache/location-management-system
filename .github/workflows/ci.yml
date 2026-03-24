@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile=false
+      - name: Install API dependencies
+        run: |
+          cd apps/api
+          python -m pip install uv
+          uv sync
+      - name: Run validations
+        run: |
+          pnpm lint
+          cd apps/api && uv run pytest

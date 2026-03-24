@@ -1,0 +1,38 @@
+[project]
+name = "location-management-api"
+version = "0.1.0"
+description = "FastAPI backend for the Location Management System."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.16.0",
+    "fastapi>=0.115.0",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic-settings>=2.8.0",
+    "pydantic[email]>=2.11.0",
+    "psycopg[binary]>=3.2.0",
+    "pyjwt>=2.10.1",
+    "python-multipart>=0.0.20",
+    "sqlalchemy>=2.0.40",
+    "uvicorn[standard]>=0.34.0"
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "ruff>=0.11.0"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["B008"]
