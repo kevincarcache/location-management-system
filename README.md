@@ -49,11 +49,8 @@ Monorepo para administrar y publicar localizaciones comerciales con backend en F
 - Admin: `pnpm --filter @lms/admin lint && pnpm --filter @lms/admin test && pnpm --filter @lms/admin build`
 
 ## Documentación operativa
-- [Plan de ejecución de auditoría](docs/plan-ejecucion-auditoria.md)
-- [Auditoría técnica y de contexto IA](docs/auditoria-hallazgos.md)
 - [Arquitectura](docs/architecture.md)
 - [Convenciones](docs/conventions.md)
 - [Testing y matriz de validación](docs/testing.md)
 - [Ejemplos y anti-patrones](docs/examples.md)
-- [Toolkit MCP recomendado](docs/mcp-tooling.md)
 - [Contribución](CONTRIBUTING.md)
