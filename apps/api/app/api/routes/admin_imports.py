@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_admin_user
 from app.db.session import get_db
 from app.schemas.imports import LocationImportJobRead, LocationImportPreviewRead
 from app.services.imports import (
@@ -10,7 +11,7 @@ from app.services.imports import (
     preview_locations_csv,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_admin_user)])
 
 
 @router.get("/locations/csv/template")

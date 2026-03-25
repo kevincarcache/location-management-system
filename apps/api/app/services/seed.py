@@ -34,3 +34,4 @@ def ensure_seed_admin_user(db: Session) -> None:
         full_name=seed_admin.full_name,
         hashed_password=seed_admin.hashed_password,
     )
+    db.commit()

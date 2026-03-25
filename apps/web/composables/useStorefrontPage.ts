@@ -1,40 +1,7 @@
 import { computed, watch } from 'vue'
 
-import type { BusinessType, LocationSummary } from '@lms/types'
-
-import type { StoreConfig } from './useStoreConfig'
-
-interface ApiLocation {
-  id: string
-  slug: string
-  name: string
-  business_type: BusinessType
-  status: 'draft' | 'active' | 'archived'
-  description_short?: string | null
-  address_line_1: string
-  city: string
-  country: string
-  latitude: number
-  longitude: number
-  featured: boolean
-}
-
-function mapLocation(location: ApiLocation): LocationSummary {
-  return {
-    id: location.id,
-    slug: location.slug,
-    name: location.name,
-    businessType: location.business_type,
-    status: location.status,
-    city: location.city,
-    country: location.country,
-    latitude: location.latitude,
-    longitude: location.longitude,
-    addressLine1: location.address_line_1,
-    descriptionShort: location.description_short ?? null,
-    featured: location.featured
-  }
-}
+import type { ApiLocation, LocationSummary, StoreConfig } from '@lms/types'
+import { buildStorefrontRouteQuery, mapLocationSummary } from './storefront-state'
 
 export async function useStorefrontPage() {
   const route = useRoute()
@@ -72,7 +39,7 @@ export async function useStorefrontPage() {
       })
 
       return {
-        locations: locations.map(mapLocation),
+        locations: locations.map(mapLocationSummary),
         resolvedStoreview,
         storeConfig
       }
@@ -105,13 +72,12 @@ export async function useStorefrontPage() {
   })
 
   function buildRouteQuery() {
-    return {
-      ...(resolvedStoreview.value && !configuredStoreview.value
-        ? { storeview: resolvedStoreview.value }
-        : {}),
-      ...(query.value ? { q: query.value } : {}),
-      ...(selectedSlug.value ? { selected: selectedSlug.value } : {})
-    }
+    return buildStorefrontRouteQuery({
+      configuredStoreview: configuredStoreview.value,
+      resolvedStoreview: resolvedStoreview.value,
+      query: query.value,
+      selectedSlug: selectedSlug.value
+    })
   }
 
   async function syncRouteState() {

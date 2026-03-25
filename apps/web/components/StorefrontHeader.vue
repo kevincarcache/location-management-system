@@ -53,9 +53,8 @@
 </template>
 
 <script setup lang="ts">
+import type { StoreConfig } from '@lms/types'
 import { computed } from 'vue'
-
-import type { StoreConfig } from '../composables/useStoreConfig'
 
 const props = withDefaults(defineProps<{
   drawer: boolean

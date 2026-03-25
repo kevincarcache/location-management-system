@@ -30,4 +30,8 @@ jobs:
       - name: Run validations
         run: |
           pnpm lint
+          pnpm --filter @lms/web test
+          pnpm --filter @lms/web build
+          pnpm --filter @lms/admin test
+          pnpm --filter @lms/admin build
           cd apps/api && uv run pytest

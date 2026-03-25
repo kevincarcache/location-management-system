@@ -8,7 +8,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "lint": "vue-tsc --noEmit",
     "typecheck": "vue-tsc --noEmit",
-    "test": "echo \"No tests configured yet\"",
+    "test": "vitest run",
     "format": "echo \"Formatting handled at workspace level\""
   },
   "dependencies": {

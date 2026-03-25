@@ -1,6 +1,8 @@
 import csv
 import json
+from dataclasses import dataclass
 from io import StringIO
+from logging import getLogger
 
 from sqlalchemy.orm import Session
 
@@ -23,6 +25,8 @@ from app.schemas.imports import (
     LocationImportRowErrorRead,
 )
 from app.schemas.location import LocationCreate, LocationUpdate
+
+logger = getLogger(__name__)
 
 REQUIRED_COLUMNS = {
     "external_id",
@@ -74,6 +78,21 @@ TEMPLATE_HEADERS = [
 ]
 
 
+@dataclass(slots=True)
+class ParsedImportRow:
+    row_number: int
+    raw: dict[str, str]
+
+
+@dataclass(slots=True)
+class ImportActionPlan:
+    row_number: int
+    raw: dict[str, str]
+    payload: LocationCreate | None
+    action: str
+    message: str | None = None
+
+
 def _serialize_job(job) -> LocationImportJobRead:
     return LocationImportJobRead(
         id=job.id,
@@ -100,92 +119,42 @@ def preview_locations_csv(
     filename: str,
     content: bytes,
 ) -> LocationImportPreviewRead:
-    rows = _read_csv_rows(content)
-    preview_rows: list[LocationImportPreviewRow] = []
-    create_candidates = 0
-    update_candidates = 0
-    rejected_rows = 0
-
-    for row_number, row in rows:
-        try:
-            payload = _build_location_payload(row)
-            existing = _find_existing_location(db, payload.external_id, payload.slug)
-            action = "update" if existing is not None else "create"
-            if action == "update":
-                update_candidates += 1
-            else:
-                create_candidates += 1
-            preview_rows.append(
-                LocationImportPreviewRow(
-                    row_number=row_number,
-                    action=action,
-                    slug=payload.slug,
-                    name=payload.name,
-                    business_type=payload.business_type,
-                )
-            )
-        except Exception as exc:
-            rejected_rows += 1
-            preview_rows.append(
-                LocationImportPreviewRow(
-                    row_number=row_number,
-                    action="reject",
-                    slug=row.get("slug"),
-                    name=row.get("name"),
-                    business_type=row.get("business_type"),
-                    message=str(exc),
-                )
-            )
-
-    total_rows = len(rows)
-    valid_rows = total_rows - rejected_rows
-
-    return LocationImportPreviewRead(
-        filename=filename,
-        required_columns=sorted(REQUIRED_COLUMNS),
-        optional_columns=OPTIONAL_COLUMNS,
-        total_rows=total_rows,
-        valid_rows=valid_rows,
-        create_candidates=create_candidates,
-        update_candidates=update_candidates,
-        rejected_rows=rejected_rows,
-        rows=preview_rows,
-    )
+    plans = _build_import_plan(db, content=content)
+    logger.info("locations_import_preview filename=%s rows=%s", filename, len(plans))
+    return _serialize_preview(filename=filename, plans=plans)
 
 
 def import_locations_csv(db: Session, *, filename: str, content: bytes) -> LocationImportJobRead:
-    rows = _read_csv_rows(content)
+    plans = _build_import_plan(db, content=content)
     job = create_import_job(db, filename=filename)
     created = 0
     updated = 0
     rejected = 0
 
-    for row_number, row in rows:
-        try:
-            payload = _build_location_payload(row)
-        except Exception as exc:
+    for plan in plans:
+        if plan.action == "reject" or plan.payload is None:
             rejected += 1
             add_import_error(
                 db,
                 job_id=job.id,
-                row_number=row_number,
-                message=str(exc),
-                raw_row=json.dumps(row, ensure_ascii=True),
+                row_number=plan.row_number,
+                message=plan.message or "Rejected row",
+                raw_row=json.dumps(plan.raw, ensure_ascii=True),
             )
             continue
 
-        existing = _find_existing_location(db, payload.external_id, payload.slug)
-
-        if existing is None:
-            create_location(db, payload)
+        if plan.action == "create":
+            create_location(db, plan.payload)
             created += 1
             continue
 
-        update_location(
-            db,
-            existing,
-            LocationUpdate(**payload.model_dump()),
-        )
+        existing = _find_existing_location(db, plan.payload.external_id, plan.payload.slug)
+        if existing is None:
+            create_location(db, plan.payload)
+            created += 1
+            continue
+
+        update_location(db, existing, LocationUpdate(**plan.payload.model_dump()))
         updated += 1
 
     stored = update_import_job_counts(
@@ -195,6 +164,14 @@ def import_locations_csv(db: Session, *, filename: str, content: bytes) -> Locat
         created=created,
         updated=updated,
         rejected=rejected,
+    )
+    db.commit()
+    logger.info(
+        "locations_import_completed filename=%s created=%s updated=%s rejected=%s",
+        filename,
+        created,
+        updated,
+        rejected,
     )
     hydrated = get_import_job(db, stored.id)
     return _serialize_job(hydrated or stored)
@@ -235,7 +212,46 @@ def get_csv_template() -> str:
     return output.getvalue()
 
 
-def _read_csv_rows(content: bytes) -> list[tuple[int, dict[str, str]]]:
+def _serialize_preview(
+    *,
+    filename: str,
+    plans: list[ImportActionPlan],
+) -> LocationImportPreviewRead:
+    create_candidates = sum(plan.action == "create" for plan in plans)
+    update_candidates = sum(plan.action == "update" for plan in plans)
+    rejected_rows = sum(plan.action == "reject" for plan in plans)
+
+    return LocationImportPreviewRead(
+        filename=filename,
+        required_columns=sorted(REQUIRED_COLUMNS),
+        optional_columns=OPTIONAL_COLUMNS,
+        total_rows=len(plans),
+        valid_rows=len(plans) - rejected_rows,
+        create_candidates=create_candidates,
+        update_candidates=update_candidates,
+        rejected_rows=rejected_rows,
+        rows=[
+            LocationImportPreviewRow(
+                row_number=plan.row_number,
+                action=plan.action,
+                slug=plan.payload.slug if plan.payload else plan.raw.get("slug"),
+                name=plan.payload.name if plan.payload else plan.raw.get("name"),
+                business_type=(
+                    plan.payload.business_type if plan.payload else plan.raw.get("business_type")
+                ),
+                message=plan.message,
+            )
+            for plan in plans
+        ],
+    )
+
+
+def _build_import_plan(db: Session, *, content: bytes) -> list[ImportActionPlan]:
+    parsed_rows = _read_csv_rows(content)
+    return [_classify_import_row(db, parsed_row) for parsed_row in parsed_rows]
+
+
+def _read_csv_rows(content: bytes) -> list[ParsedImportRow]:
     decoded = content.decode("utf-8-sig")
     reader = csv.DictReader(StringIO(decoded))
 
@@ -246,7 +262,30 @@ def _read_csv_rows(content: bytes) -> list[tuple[int, dict[str, str]]]:
     if missing:
         raise ValueError(f"CSV is missing required columns: {', '.join(sorted(missing))}")
 
-    return list(enumerate(reader, start=2))
+    return [
+        ParsedImportRow(row_number=row_number, raw=row)
+        for row_number, row in enumerate(reader, start=2)
+    ]
+
+
+def _classify_import_row(db: Session, parsed_row: ParsedImportRow) -> ImportActionPlan:
+    try:
+        payload = _build_location_payload(parsed_row.raw)
+        existing = _find_existing_location(db, payload.external_id, payload.slug)
+        return ImportActionPlan(
+            row_number=parsed_row.row_number,
+            raw=parsed_row.raw,
+            payload=payload,
+            action="update" if existing is not None else "create",
+        )
+    except Exception as exc:
+        return ImportActionPlan(
+            row_number=parsed_row.row_number,
+            raw=parsed_row.raw,
+            payload=None,
+            action="reject",
+            message=str(exc),
+        )
 
 
 def _build_location_payload(row: dict[str, str]) -> LocationCreate:

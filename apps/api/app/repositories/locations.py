@@ -67,8 +67,7 @@ def get_location_by_external_id(db: Session, external_id: str) -> Location | Non
 def create_location(db: Session, payload: LocationCreate) -> Location:
     location = Location(**payload.model_dump())
     db.add(location)
-    db.commit()
-    db.refresh(location)
+    db.flush()
     return location
 
 
@@ -77,11 +76,9 @@ def update_location(db: Session, location: Location, payload: LocationUpdate) ->
         setattr(location, field, value)
 
     db.add(location)
-    db.commit()
-    db.refresh(location)
+    db.flush()
     return location
 
 
 def delete_location(db: Session, location: Location) -> None:
     db.delete(location)
-    db.commit()

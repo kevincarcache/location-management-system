@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_admin_user
 from app.db.session import get_db
 from app.schemas.location import LocationCreate, LocationRead, LocationUpdate
 from app.services.locations import (
@@ -11,7 +12,7 @@ from app.services.locations import (
     update_location,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_admin_user)])
 
 
 @router.get("", response_model=list[LocationRead])

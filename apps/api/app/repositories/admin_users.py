@@ -22,6 +22,5 @@ def create_admin_user(
         hashed_password=hashed_password,
     )
     db.add(admin_user)
-    db.commit()
-    db.refresh(admin_user)
+    db.flush()
     return admin_user

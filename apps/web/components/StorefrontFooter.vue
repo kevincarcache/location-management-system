@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import type { StoreConfig } from '../composables/useStoreConfig'
+import type { StoreConfig } from '@lms/types'
 
 defineProps<{
   resolvedStoreview: string | null | undefined

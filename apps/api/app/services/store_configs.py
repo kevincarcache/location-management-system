@@ -40,6 +40,7 @@ def ensure_seed_store_config(db: Session) -> None:
         menu_label="Sucursales",
         footer_text="Panama Service Network te acompaña con cobertura, atención y soporte.",
     )
+    db.commit()
 
 
 def resolve_store_config(db: Session, requested_slug: str | None = None) -> StoreConfigRead:
@@ -64,6 +65,8 @@ def list_store_configs(db: Session) -> list[StoreConfigRead]:
 
 def create_store_config(db: Session, payload: StoreConfigCreate) -> StoreConfigRead:
     created = create_store_config_record(db, **payload.model_dump())
+    db.commit()
+    db.refresh(created)
     return StoreConfigRead.model_validate(created, from_attributes=True)
 
 
@@ -76,4 +79,6 @@ def update_store_config(
     if store_config is None:
         return None
     updated = update_store_config_record(db, store_config, **payload.model_dump(exclude_none=True))
+    db.commit()
+    db.refresh(updated)
     return StoreConfigRead.model_validate(updated, from_attributes=True)

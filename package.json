@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
-    "turbo": "^2.5.0"
+    "turbo": "^2.5.0",
+    "vitest": "^4.1.1"
   }
 }

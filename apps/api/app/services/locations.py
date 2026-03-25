@@ -180,6 +180,7 @@ def ensure_seed_locations(db: Session) -> None:
         if existing:
             continue
         create_location_record(db, item)
+    db.commit()
 
 
 def list_locations(
@@ -199,6 +200,8 @@ def list_locations(
 
 def create_location(db: Session, payload: LocationCreate) -> LocationRead:
     location = create_location_record(db, payload)
+    db.commit()
+    db.refresh(location)
     return _serialize_location(location)
 
 
@@ -214,6 +217,8 @@ def update_location(db: Session, location_id: str, payload: LocationUpdate) -> L
     if location is None:
         return None
     updated = update_location_record(db, location, payload)
+    db.commit()
+    db.refresh(updated)
     return _serialize_location(updated)
 
 
@@ -229,4 +234,5 @@ def delete_location(db: Session, location_id: str) -> bool:
     if location is None:
         return False
     delete_location_record(db, location)
+    db.commit()
     return True
