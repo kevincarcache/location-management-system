@@ -5,7 +5,9 @@
 - Do not introduce a second fetch or composable pattern for the same store config and locations flow unless replacing the canonical one.
 - Shared URL state belongs in the page orchestration layer.
 - Components should focus on presentation and emitted events; extracted state logic belongs in composables or pure helpers.
-- Use Vuetify-first structure for layout and stateful UI, and keep custom CSS focused on branding or technical integration details.
+- Web is `Vuetify-first`. Prefer Vuetify primitives, theme tokens, defaults and documented component patterns over bespoke UI abstractions or parallel layout systems.
+- When a Nuxt runtime, routing, hydration, `useAsyncData`, or deployment behavior is unclear, consult `nuxt_mcp`.
+- When the correct Vuetify pattern, API or best practice is unclear, consult `vuetify_mcp` before inventing a custom solution.
 - Shared contracts should come from `@lms/types` unless the type is purely local presentation state.
 
 ## Anti-patterns

@@ -38,28 +38,29 @@ export default defineNuxtPlugin((nuxtApp) => {
         elevation: 0
       },
       VCard: {
-        rounded: 'md',
+        rounded: 'lg',
         elevation: 0
       },
       VSheet: {
-        rounded: 'md'
+        rounded: 'lg'
       },
       VTextField: {
         variant: 'outlined',
         density: 'comfortable',
-        hideDetails: true
+        hideDetails: true,
+        rounded: 'lg'
       },
       VBtn: {
-        rounded: 'md'
+        rounded: 'lg'
       },
       VChip: {
-        rounded: 'md'
+        rounded: 'lg'
       },
       VNavigationDrawer: {
         elevation: 0
       },
       VListItem: {
-        rounded: 'md'
+        rounded: 'lg'
       }
     }
   })

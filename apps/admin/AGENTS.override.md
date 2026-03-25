@@ -7,6 +7,8 @@
 - Page components own route-level orchestration, data loading and submit flows.
 - Reusable UI or field logic should move to `src/components`, `src/lib` or `src/stores` once it would otherwise be duplicated.
 - Shared contracts should come from `@lms/types` unless the type is purely local UI state.
+- Admin is `Vuetify-first`. Prefer Vuetify primitives, theme tokens, defaults and documented component patterns over bespoke UI abstractions or parallel layout systems.
+- When the correct Vuetify pattern, API or best practice is unclear, consult `vuetify_mcp` before inventing a custom solution.
 
 ## Anti-patterns
 - Fetching directly from page or component files when `admin-api.ts` can own the call.

@@ -2,6 +2,10 @@
 enabled = true
 url = "https://nuxt.com/mcp"
 
+[mcp_servers.vuetify_mcp]
+enabled = true
+url = "https://mcp.vuetifyjs.com/mcp"
+
 [mcp_servers.playwright]
 command = "npx"
 args = ["-y", "@playwright/mcp@latest"]

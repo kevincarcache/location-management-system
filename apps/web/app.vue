@@ -1,21 +1,26 @@
 <template>
-  <v-app class="storefront-app" :data-theme="storeConfig?.theme_preset || 'storefront'">
-    <div class="storefront-layout">
+  <v-app :data-theme="storeConfig?.theme_preset || 'storefront'">
+    <v-layout class="d-flex flex-column">
       <StorefrontHeader
         :drawer="drawer ?? false"
+        :resolved-storeview="resolvedStoreview"
         :store-config="storeConfig"
         @toggle-drawer="toggleDrawer"
         @update:drawer="updateDrawer"
         @navigate="navigateToSection"
       />
 
-      <v-sheet tag="main" color="transparent" class="storefront-main">
-        <v-container class="storefront-stage py-4 py-md-8" fluid>
-          <v-container class="px-0 px-md-4" max-width="1480">
+      <v-main>
+        <v-container fluid class="py-4 py-md-8">
+          <v-container max-width="1480">
             <StorefrontHero
+              :featured-count="featuredCount"
               :query="query ?? ''"
+              :resolved-storeview="resolvedStoreview"
               :store-config="storeConfig"
+              :total-locations="filteredLocations?.length ?? 0"
               @update:query="updateQuery"
+              @navigate="navigateToSection"
             />
 
             <StorefrontStatus
@@ -32,11 +37,13 @@
             <v-sheet
               v-else
               id="locations"
-              rounded="md"
-              class="locator-workspace pa-3 pa-md-4"
+              rounded="lg"
+              color="surface"
+              border
+              class="pa-3 pa-md-4"
             >
-              <v-row class="ga-0">
-                <v-col cols="12" lg="4" xl="3" class="pe-lg-4 mb-4 mb-lg-0">
+              <v-row>
+                <v-col cols="12" lg="4" xl="3">
                   <LocationSidebar
                     :locations="filteredLocations ?? []"
                     :selected-slug="selectedSlug ?? null"
@@ -56,13 +63,13 @@
             </v-sheet>
           </v-container>
         </v-container>
-      </v-sheet>
+      </v-main>
 
       <StorefrontFooter
         :resolved-storeview="resolvedStoreview"
         :store-config="storeConfig"
       />
-    </div>
+    </v-layout>
   </v-app>
 </template>
 
@@ -85,6 +92,10 @@ const {
   updateQuery,
   updateSelectedSlug
 } = await useStorefrontPage()
+
+const featuredCount = computed(
+  () => filteredLocations.value.filter((location) => location.featured).length
+)
 
 useHead(
   computed(() => ({

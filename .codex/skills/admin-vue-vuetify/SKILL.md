@@ -21,9 +21,11 @@ description: Use when modifying the Vue and Vuetify admin app, especially auth f
 3. When a form grows beyond one page or repeats transformation logic, extract helpers to `src/lib` or state to `src/stores`.
 4. Import shared API contracts from `@lms/types` unless the type is purely local UI state.
 5. Before adding a new page-level pattern, compare with the existing page files in `src/pages`.
+6. Treat the admin as `Vuetify-first`: prefer Vuetify components, defaults, theme tokens and documented patterns before adding custom wrappers or bespoke styling.
 
 ## MCP and references
 - Pair this skill with Playwright MCP for auth, navigation, form and responsive debugging.
+- Consult `vuetify_mcp` when the correct Vuetify component API, composition pattern, theming approach or best practice is unclear.
 - Use Git or filesystem context to inspect existing page and store patterns before introducing new helpers.
 - Pair with `testing-matrix` whenever the change crosses auth, routes and API consumers.
 
@@ -31,6 +33,7 @@ description: Use when modifying the Vue and Vuetify admin app, especially auth f
 - Fetching directly from page or component files instead of `admin-api.ts`.
 - Reading `localStorage` at module import time.
 - Mixing auth/session state with transient form state.
+- Replacing a solvable Vuetify pattern with a custom abstraction before checking `vuetify_mcp` or existing app patterns.
 - Leaving page-specific transformation logic buried inside template-heavy `.vue` files.
 
 ## Required validation

@@ -5,8 +5,7 @@ export default defineNuxtConfig({
   css: [
     'vuetify/styles',
     '@mdi/font/css/materialdesignicons.css',
-    'maplibre-gl/dist/maplibre-gl.css',
-    '~/assets/css/main.css'
+    'maplibre-gl/dist/maplibre-gl.css'
   ],
   build: {
     transpile: ['vuetify']
