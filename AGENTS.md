@@ -13,7 +13,6 @@
 - Shared TypeScript contracts: `packages/types/src/index.ts`
 - Public storefront data orchestration: `apps/web/composables/useStorefrontPage.ts`
 - Admin API client boundary: `apps/admin/src/lib/admin-api.ts`
-- Current execution roadmap: `docs/plan-ejecucion-auditoria.md`
 
 ## Global Rules
 - If you change SQLAlchemy models, also add/update Alembic migrations and run `uv run alembic upgrade head`.
