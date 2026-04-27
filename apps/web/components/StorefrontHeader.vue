@@ -23,20 +23,10 @@ import type { StoreConfig } from '@lms/types'
 import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{
-  drawer: boolean
-  resolvedStoreview: string | null | undefined
   storeConfig: StoreConfig | null | undefined
 }>(), {
-  drawer: false,
-  resolvedStoreview: undefined,
   storeConfig: undefined
 })
-
-const emit = defineEmits<{
-  'toggle-drawer': []
-  'update:drawer': [value: boolean]
-  navigate: [id: string]
-}>()
 
 const brandName = computed(() => props.storeConfig?.brand_name || 'Storefront')
 const menuLabel = computed(() => props.storeConfig?.menu_label || 'Ubicaciones')

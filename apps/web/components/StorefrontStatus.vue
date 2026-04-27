@@ -8,7 +8,7 @@
     class="mb-6"
   >
     <div class="text-subtitle-1 font-weight-bold mb-1">Cargando la experiencia de la tienda</div>
-    <div class="text-body-2">Estamos preparando el catálogo visible para este storeview.</div>
+    <div class="text-body-2">Estamos preparando el catálogo visible.</div>
   </v-alert>
 
   <v-alert
@@ -21,7 +21,7 @@
   >
     <div class="text-subtitle-1 font-weight-bold mb-2">No pudimos cargar esta tienda</div>
     <div class="text-body-2 mb-4">
-      Verifica la configuración del storeview y la disponibilidad de la API.
+      Verifica la configuración de la tienda y la disponibilidad de la API.
     </div>
     <v-btn color="primary" @click="emit('retry')">Reintentar</v-btn>
   </v-alert>
