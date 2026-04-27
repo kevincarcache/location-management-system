@@ -35,6 +35,7 @@ describe('useSessionStore', () => {
     loginMock.mockReset()
     refreshMock.mockReset()
     vi.stubGlobal('localStorage', createStorage())
+    vi.stubGlobal('window', {})
   })
 
   afterEach(() => {
@@ -78,5 +79,46 @@ describe('useSessionStore', () => {
     expect(store.accessToken.value).toBeNull()
     expect(store.refreshToken.value).toBeNull()
     expect(localStorage.getItem('lms.admin.accessToken')).toBeNull()
+  })
+
+  it('persists refreshed tokens', async () => {
+    localStorage.setItem('lms.admin.accessToken', 'stale-access')
+    localStorage.setItem('lms.admin.refreshToken', 'refresh-1')
+    refreshMock.mockResolvedValue({
+      access_token: 'access-2',
+      refresh_token: 'refresh-2',
+      token_type: 'bearer',
+    })
+
+    const { useSessionStore } = await import('./session')
+    const store = useSessionStore()
+
+    const refreshed = await store.refreshSession()
+
+    expect(refreshed?.access_token).toBe('access-2')
+    expect(store.accessToken.value).toBe('access-2')
+    expect(store.refreshToken.value).toBe('refresh-2')
+    expect(localStorage.getItem('lms.admin.accessToken')).toBe('access-2')
+    expect(localStorage.getItem('lms.admin.refreshToken')).toBe('refresh-2')
+  })
+
+  it('deduplicates concurrent refresh attempts', async () => {
+    localStorage.setItem('lms.admin.accessToken', 'stale-access')
+    localStorage.setItem('lms.admin.refreshToken', 'refresh-1')
+    refreshMock.mockResolvedValue({
+      access_token: 'access-2',
+      refresh_token: 'refresh-2',
+      token_type: 'bearer',
+    })
+
+    const { useSessionStore } = await import('./session')
+    const store = useSessionStore()
+
+    const [first, second] = await Promise.all([store.refreshSession(), store.refreshSession()])
+
+    expect(first?.access_token).toBe('access-2')
+    expect(second?.access_token).toBe('access-2')
+    expect(refreshMock).toHaveBeenCalledTimes(1)
+    expect(localStorage.getItem('lms.admin.accessToken')).toBe('access-2')
   })
 })

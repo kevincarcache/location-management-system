@@ -13,6 +13,7 @@ const REFRESH_TOKEN_KEY = 'lms.admin.refreshToken'
 const accessToken = ref<string | null>(null)
 const refreshToken = ref<string | null>(null)
 let hydrated = false
+let refreshInFlight: Promise<TokenPair | null> | null = null
 
 function ensureHydrated() {
   if (hydrated || typeof window === 'undefined') {
@@ -57,14 +58,22 @@ export function useSessionStore() {
       return null
     }
 
-    try {
-      const tokens = await refreshRequest(refreshToken.value)
-      persistTokens(tokens)
-      return tokens
-    } catch {
-      clearTokens()
-      return null
+    if (!refreshInFlight) {
+      refreshInFlight = refreshRequest(refreshToken.value)
+        .then((tokens) => {
+          persistTokens(tokens)
+          return tokens
+        })
+        .catch(() => {
+          clearTokens()
+          return null
+        })
+        .finally(() => {
+          refreshInFlight = null
+        })
     }
+
+    return refreshInFlight
   }
 
   function logout() {
