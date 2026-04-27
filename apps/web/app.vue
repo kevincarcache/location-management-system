@@ -1,5 +1,5 @@
 <template>
-  <v-app :data-theme="storeConfig?.theme_preset || 'storefront'">
+  <v-app :theme="activeThemeName" :data-theme="activeThemeName">
     <v-layout class="d-flex flex-column">
       <StorefrontHeader
         :store-config="storeConfig"
@@ -91,6 +91,27 @@ const {
   updateQuery,
   updateSelectedSlug
 } = await useStorefrontPage()
+
+const themeAliases: Record<string, string> = {
+  'serious-teal': 'branch-teal',
+  'graphite-sand': 'service-slate',
+  'coastal-slate': 'service-slate'
+}
+
+const themeNames = new Set([
+  'branch-teal',
+  'event-indigo',
+  'recycling-green',
+  'academy-amber',
+  'service-slate'
+])
+
+const activeThemeName = computed(() => {
+  const preset = storeConfig.value?.theme_preset || 'branch-teal'
+  const normalizedPreset = themeAliases[preset] || preset
+
+  return themeNames.has(normalizedPreset) ? normalizedPreset : 'branch-teal'
+})
 
 useHead(
   computed(() => ({
