@@ -2,26 +2,31 @@
   <v-app :data-theme="storeConfig?.theme_preset || 'storefront'">
     <v-layout class="d-flex flex-column">
       <StorefrontHeader
-        :drawer="drawer ?? false"
-        :resolved-storeview="resolvedStoreview"
         :store-config="storeConfig"
-        @toggle-drawer="toggleDrawer"
-        @update:drawer="updateDrawer"
-        @navigate="navigateToSection"
       />
 
       <v-main>
         <v-container fluid class="py-4 py-md-8">
           <v-container max-width="1480">
             <StorefrontHero
-              :featured-count="featuredCount"
-              :query="query ?? ''"
-              :resolved-storeview="resolvedStoreview"
               :store-config="storeConfig"
-              :total-locations="filteredLocations?.length ?? 0"
-              @update:query="updateQuery"
-              @navigate="navigateToSection"
             />
+
+            <v-sheet
+              rounded="lg"
+              color="surface"
+              border
+              class="mb-5 mb-md-7 pa-4 pa-md-5"
+            >
+              <v-text-field
+                :model-value="query ?? ''"
+                prepend-inner-icon="mdi-magnify"
+                label="Buscar por nombre, ciudad o dirección"
+                hide-details
+                class="w-100"
+                @update:model-value="updateQuery($event ?? '')"
+              />
+            </v-sheet>
 
             <StorefrontStatus
               v-if="pendingConfig || pendingLocations"
@@ -66,7 +71,6 @@
       </v-main>
 
       <StorefrontFooter
-        :resolved-storeview="resolvedStoreview"
         :store-config="storeConfig"
       />
     </v-layout>
@@ -76,26 +80,17 @@
 <script setup lang="ts">
 const {
   configError,
-  drawer,
   filteredLocations,
   locationsError,
-  navigateToSection,
   pendingConfig,
   pendingLocations,
   query,
-  resolvedStoreview,
   retryAll,
   selectedSlug,
   storeConfig,
-  toggleDrawer,
-  updateDrawer,
   updateQuery,
   updateSelectedSlug
 } = await useStorefrontPage()
-
-const featuredCount = computed(
-  () => filteredLocations.value.filter((location) => location.featured).length
-)
 
 useHead(
   computed(() => ({
