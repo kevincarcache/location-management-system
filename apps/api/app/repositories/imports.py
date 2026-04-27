@@ -8,8 +8,7 @@ from app.models.location_import_row_error import LocationImportRowError
 def create_import_job(db: Session, *, filename: str) -> LocationImportJob:
     job = LocationImportJob(filename=filename, status="processing")
     db.add(job)
-    db.commit()
-    db.refresh(job)
+    db.flush()
     return job
 
 
@@ -28,8 +27,7 @@ def add_import_error(
         raw_row=raw_row,
     )
     db.add(error)
-    db.commit()
-    db.refresh(error)
+    db.flush()
     return error
 
 
@@ -56,6 +54,5 @@ def update_import_job_counts(
     job.updated = updated
     job.rejected = rejected
     db.add(job)
-    db.commit()
-    db.refresh(job)
+    db.flush()
     return job

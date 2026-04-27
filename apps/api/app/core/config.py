@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     admin_email: str = "admin@example.com"
     admin_password: str = "ChangeMe123!"
     admin_full_name: str = "Platform Admin"
+    geocoding_base_url: str = "https://nominatim.openstreetmap.org/search"
+    geocoding_user_agent: str = "location-management-system/0.1"
+    geocoding_timeout_seconds: int = 10
+    geocoding_limit: int = 5
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",

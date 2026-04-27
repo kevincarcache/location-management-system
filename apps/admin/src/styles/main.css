@@ -267,16 +267,27 @@ h1 {
   color: #fff;
 }
 
+.preview-banner[data-theme='branch-teal'],
 .preview-banner[data-theme='serious-teal'] {
-  background: linear-gradient(135deg, #1f4b6e 0%, #22577a 100%);
+  background: linear-gradient(135deg, #1d5c63 0%, #b26a3d 100%);
 }
 
-.preview-banner[data-theme='graphite-sand'] {
-  background: linear-gradient(135deg, #374151 0%, #78644d 100%);
+.preview-banner[data-theme='event-indigo'] {
+  background: linear-gradient(135deg, #4f46e5 0%, #db2777 100%);
 }
 
+.preview-banner[data-theme='recycling-green'] {
+  background: linear-gradient(135deg, #2f6f4e 0%, #8a9a2f 100%);
+}
+
+.preview-banner[data-theme='academy-amber'] {
+  background: linear-gradient(135deg, #8a4f12 0%, #d97706 100%);
+}
+
+.preview-banner[data-theme='service-slate'],
+.preview-banner[data-theme='graphite-sand'],
 .preview-banner[data-theme='coastal-slate'] {
-  background: linear-gradient(135deg, #1e3a5f 0%, #4b6476 100%);
+  background: linear-gradient(135deg, #25516b 0%, #0f766e 100%);
 }
 
 .types-grid {

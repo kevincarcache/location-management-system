@@ -1,36 +1,39 @@
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from logging import getLogger
 
+from app.core.config import settings
 from app.schemas.geocoding import GeocodingResultRead
+from app.services.geocoding_provider import (
+    GeocodingProvider,
+    NominatimGeocodingProvider,
+)
+
+logger = getLogger(__name__)
 
 
-def search_locations(query: str) -> list[GeocodingResultRead]:
+def _build_provider() -> GeocodingProvider:
+    return NominatimGeocodingProvider(
+        base_url=settings.geocoding_base_url,
+        user_agent=settings.geocoding_user_agent,
+        timeout_seconds=settings.geocoding_timeout_seconds,
+        limit=settings.geocoding_limit,
+    )
+
+
+def search_locations(
+    query: str,
+    provider: GeocodingProvider | None = None,
+) -> list[GeocodingResultRead]:
     if not query.strip():
         return []
 
-    params = urlencode(
-        {
-            "q": query.strip(),
-            "format": "jsonv2",
-            "limit": 5,
-        }
-    )
-    request = Request(
-        f"https://nominatim.openstreetmap.org/search?{params}",
-        headers={"User-Agent": "location-management-system/0.1"},
-    )
-
-    with urlopen(request, timeout=10) as response:
-        payload = response.read().decode("utf-8")
-
-    import json
-
-    data = json.loads(payload)
+    geocoding_provider = provider or _build_provider()
+    logger.info("geocoding_search query=%s", query.strip())
+    data = geocoding_provider.search(query)
     return [
         GeocodingResultRead(
-            display_name=item["display_name"],
-            latitude=float(item["lat"]),
-            longitude=float(item["lon"]),
+            display_name=item.display_name,
+            latitude=item.latitude,
+            longitude=item.longitude,
         )
         for item in data
     ]

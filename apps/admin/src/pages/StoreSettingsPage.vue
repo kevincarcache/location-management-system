@@ -43,6 +43,8 @@
           <v-select
             v-model="form.theme_preset"
             :items="themeOptions"
+            item-title="title"
+            item-value="value"
             label="Tema visual"
             variant="outlined"
           />
@@ -103,7 +105,7 @@ const form = ref<StoreConfigPayload>({
   slug: 'default',
   brand_name: 'Demo Business',
   business_description: 'Describe el propósito principal del negocio y su alcance geográfico.',
-  theme_preset: 'serious-teal',
+  theme_preset: 'branch-teal',
   business_type: 'virtual-store',
   logo_url: '',
   hero_title: 'Encuentra nuestra red de atención',
@@ -112,11 +114,29 @@ const form = ref<StoreConfigPayload>({
   footer_text: 'Encuentra nuestras ubicaciones activas y planifica tu visita.'
 })
 
-const themeOptions = ['serious-teal', 'graphite-sand', 'coastal-slate']
+const themeOptions = [
+  { title: 'Sucursales | Teal editorial', value: 'branch-teal' },
+  { title: 'Eventos | Indigo vibrante', value: 'event-indigo' },
+  { title: 'Reciclaje | Verde natural', value: 'recycling-green' },
+  { title: 'Academias | Ámbar cálido', value: 'academy-amber' },
+  { title: 'Servicios técnicos | Slate técnico', value: 'service-slate' }
+]
+const themeAliases: Record<string, string> = {
+  'serious-teal': 'branch-teal',
+  'graphite-sand': 'service-slate',
+  'coastal-slate': 'service-slate'
+}
+const themeValues = new Set(themeOptions.map((item) => item.value))
 const businessTypeLabel = computed(
   () => businessTypeOptions.find((item) => item.value === form.value.business_type)?.title ?? 'Sin definir'
 )
 const menuLabel = computed(() => form.value.menu_label || 'Ubicaciones')
+
+function normalizeThemePreset(value: string) {
+  const normalizedValue = themeAliases[value] || value
+
+  return themeValues.has(normalizedValue) ? normalizedValue : 'branch-teal'
+}
 
 async function loadStoreConfig() {
   if (!session.accessToken.value) {
@@ -137,7 +157,7 @@ async function loadStoreConfig() {
       slug: config.slug,
       brand_name: config.brand_name,
       business_description: config.business_description,
-      theme_preset: config.theme_preset,
+      theme_preset: normalizeThemePreset(config.theme_preset),
       business_type: config.business_type,
       logo_url: config.logo_url ?? '',
       hero_title: config.hero_title,

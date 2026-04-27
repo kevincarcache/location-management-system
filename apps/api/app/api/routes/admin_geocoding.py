@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.api.dependencies import get_current_admin_user
 from app.schemas.geocoding import GeocodingResultRead
 from app.services.geocoding import search_locations
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_admin_user)])
 
 
 @router.get("/search", response_model=list[GeocodingResultRead])

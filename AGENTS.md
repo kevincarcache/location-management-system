@@ -1,122 +1,51 @@
-# Agent Execution Guide
+# Repository Operating Guide
 
 ## Purpose
-- Define clear ownership for contributors or agents working on the Location Management System in parallel.
-- Reduce overlap, avoid accidental rework, and keep interfaces aligned across backend, admin, and public web.
+- This repository hosts a location-management platform with three executable apps:
+  - `apps/api`: FastAPI backend, auth, seeds, migrations, imports
+  - `apps/admin`: internal Vue + Vuetify admin
+  - `apps/web`: public Nuxt + Vuetify storefront
+- The repo is optimized for small, verifiable changes. Do not widen scope unless the current task explicitly requires it.
 
-## Team Topology
+## Sources of Truth
+- Database schema and behavior: `apps/api/app/models`, `apps/api/alembic/versions`
+- Backend request/response contracts: FastAPI schemas in `apps/api/app/schemas`
+- Shared TypeScript contracts: `packages/types/src/index.ts`
+- Public storefront data orchestration: `apps/web/composables/useStorefrontPage.ts`
+- Admin API client boundary: `apps/admin/src/lib/admin-api.ts`
 
-### Agent 1: Platform / Monorepo
-- Owns repository bootstrap and shared development ergonomics.
-- Responsibilities:
-  - create monorepo structure
-  - configure `pnpm workspaces` and `turbo`
-  - set up root scripts, formatting, linting, and environment conventions
-  - add Docker and local development defaults
-  - define shared package conventions
+## Global Rules
+- If you change SQLAlchemy models, also add/update Alembic migrations and run `uv run alembic upgrade head`.
+- Admin routes must require auth. Do not add admin endpoints without the reusable admin auth dependency.
+- Repositories do not own transaction boundaries. They may `flush()`, but services own `commit()` and `rollback()`.
+- Do not redefine shared API contracts inside app-local files when the contract belongs in `packages/types`.
+- API wire format stays `snake_case`. Client-facing models may use `camelCase`, but the mapping must be explicit and centralized.
+- Put orchestration in boundaries dedicated to orchestration, not inside presentation components or persistence helpers.
+- If logic needs independent tests, extract it to a pure helper or service boundary instead of hiding it inside framework lifecycle code.
+- Prefer extending existing patterns over creating a parallel abstraction.
 
-### Agent 2: Backend / API
-- Owns the Python backend and persistence layer.
-- Responsibilities:
-  - implement `FastAPI` project structure
-  - define models and migrations
-  - build admin auth
-  - build public and admin location endpoints
-  - implement CSV import pipeline
-  - add backend tests
-
-### Agent 3: Admin Frontend
-- Owns the operational interface for internal users.
-- Responsibilities:
-  - build the `Vue 3 + Vite + Vuetify` admin app
-  - implement login flow and protected navigation
-  - build location CRUD screens
-  - build the CSV import user flow
-  - apply the admin visual system and theming
-
-### Agent 4: Public Web
-- Owns the customer-facing locator experience.
-- Responsibilities:
-  - build the `Nuxt` store-locator UI
-  - integrate search, filters, sidebar, and map
-  - synchronize selected location between list and map
-  - support responsive layouts and shareable URLs
-  - deliver a product-grade presentation layer
-
-### Agent 5: QA / Integration
-- Owns cross-app validation and release readiness.
-- Responsibilities:
-  - validate API contracts across consumers
-  - configure end-to-end tests
-  - verify seed data and startup flows
-  - catch integration issues across apps
-  - maintain a release-readiness checklist
-
-## Collaboration Rules
-- Each agent owns its scope and should not overwrite unrelated work from other agents.
-- Shared contracts must be agreed before downstream implementation diverges.
-- Changes in `packages/*` require coordination with affected app owners.
-- Backend should expose stable API contracts for both frontends.
-- Any data model change must include:
-  - migration updates
-  - contract updates
-  - seed updates when needed
-  - minimum test coverage
-
-## Recommended Delivery Order
-1. Platform sets up the monorepo, tooling, and local environment.
-2. Backend defines the schema, auth, and core endpoints.
-3. Admin frontend consumes auth and CRUD endpoints.
-4. Backend finalizes CSV import behavior and reporting.
-5. Public web consumes the public API and completes the store-locator experience.
-6. QA validates end-to-end flows and closes integration gaps.
-
-## Key Handoffs
-- Platform to Backend/Admin/Web:
-  - workspace structure
-  - shared scripts
-  - environment conventions
-- Backend to Admin/Web:
-  - API contract
-  - auth flow
-  - data shape for locations
-  - import job response shape
-- QA to all teams:
-  - integration bugs
-  - missing edge cases
-  - release blockers
-
-## Deliverables by Agent
-
-### Platform
-- Executable monorepo skeleton
-- Shared tooling and documented startup flow
-
-### Backend
-- FastAPI service with migrations, auth, seed, CRUD, import pipeline, and tests
-
-### Admin Frontend
-- Usable admin app for login, location management, and CSV imports
-
-### Public Web
-- Public locator app with search, list, map, filters, and responsive polish
-
-### QA / Integration
-- Minimum E2E suite
-- Smoke-test checklist
-- Release validation notes
+## Validation Matrix
+| Change type | Required validation |
+|---|---|
+| Backend Python code | `cd apps/api && UV_CACHE_DIR=.uv-cache uv run ruff check app tests` and `cd apps/api && UV_CACHE_DIR=.uv-cache uv run pytest` |
+| Models or migrations | Backend validation plus `cd apps/api && UV_CACHE_DIR=.uv-cache uv run alembic upgrade head` |
+| Admin code | `pnpm --filter @lms/admin lint`, `pnpm --filter @lms/admin test`, `pnpm --filter @lms/admin build` |
+| Web code | `pnpm --filter @lms/web lint`, `pnpm --filter @lms/web test`, `pnpm --filter @lms/web build` |
+| Shared contracts | Validate every consumer touched by the contract change |
+| CI/workflow changes | Run the relevant commands locally where feasible and ensure the workflow mirrors them |
+| Docs-only changes | Manual consistency review of referenced commands and paths |
 
 ## Definition of Done
-- Seeded admin can log in in deployed environments.
-- Locations can be created manually or through CSV.
-- Public frontend reflects active locations from the backend.
-- List and map interactions remain synchronized.
-- Visual design is cohesive and product-ready.
-- Local setup is reproducible and documented.
+- The modified layer passes the validation matrix above.
+- Contracts remain aligned between backend and consumers.
+- No new parallel pattern was introduced where a canonical one already exists.
+- If behavior changed, tests or documentation changed with it.
+- If a limitation remains, it is called out explicitly in the final handoff.
 
-## Working Assumptions
-- The system is single-organization per deployment in v1.
-- The admin seed creates the first admin user only.
-- CSV import is a first-class feature in v1.
-- The public map stack is `MapLibre + OpenStreetMap`.
-- Product polish matters as much as basic functionality for the initial release.
+## Anti-patterns
+- Adding new admin routes without auth.
+- Calling `commit()` in repository helpers.
+- Defining duplicate TS contract types in app-local files.
+- Hiding data flow in framework lifecycle hooks when a dedicated orchestration boundary already exists.
+- Using undocumented one-off scripts or workflows when a standard command exists.
+- Editing generated directories (`.nuxt`, `.output`, `dist`, caches) as if they were source.

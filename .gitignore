@@ -3,6 +3,7 @@ node_modules
 .turbo
 .nuxt
 .output
+.uv-cache
 dist
 coverage
 .env
@@ -15,8 +16,13 @@ __pycache__
 .venv
 htmlcov
 .DS_Store
+*.tsbuildinfo
 apps/api/.venv
-apps/api/alembic/versions
 test-results/
 output/
-
+apps/web/.nuxt/
+apps/web/.output/
+apps/web/--host
+apps/admin/node_modules/
+apps/web/node_modules/
+apps/api/__pycache__/

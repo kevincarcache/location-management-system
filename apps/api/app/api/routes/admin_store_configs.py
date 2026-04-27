@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_admin_user
 from app.db.session import get_db
 from app.schemas.store_config import StoreConfigCreate, StoreConfigRead, StoreConfigUpdate
 from app.services.store_configs import create_store_config, list_store_configs, update_store_config
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_admin_user)])
 
 
 @router.get("", response_model=list[StoreConfigRead])
