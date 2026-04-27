@@ -19,21 +19,6 @@
             'Consulta nuestras ubicaciones, horarios y puntos de atención en un solo lugar.'
           }}
         </p>
-
-        <v-row class="mt-4">
-          <v-col cols="12" sm="6">
-            <v-sheet rounded="lg" border color="background" class="pa-4 h-100">
-              <div class="text-overline text-secondary">Ubicaciones visibles</div>
-              <div class="text-h5 font-weight-bold">{{ totalLocations }}</div>
-            </v-sheet>
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-sheet rounded="lg" border color="background" class="pa-4 h-100">
-              <div class="text-overline text-secondary">Destacadas</div>
-              <div class="text-h5 font-weight-bold">{{ featuredCount }}</div>
-            </v-sheet>
-          </v-col>
-        </v-row>
       </v-col>
 
       <v-col cols="12" md="5" lg="5" class="pa-4 pa-md-7 d-flex align-center">
@@ -81,17 +66,13 @@
 import type { StoreConfig } from '@lms/types'
 
 withDefaults(defineProps<{
-  featuredCount: number
   query: string
   resolvedStoreview: string | null | undefined
   storeConfig: StoreConfig | null | undefined
-  totalLocations: number
 }>(), {
-  featuredCount: 0,
   query: '',
   resolvedStoreview: undefined,
   storeConfig: undefined,
-  totalLocations: 0
 })
 
 const emit = defineEmits<{

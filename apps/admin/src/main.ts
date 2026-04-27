@@ -3,7 +3,9 @@ import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
 import App from './App.vue'
+import { configureAuthSessionHandlers } from './lib/admin-api'
 import { router } from './router'
+import { useSessionStore } from './stores/session'
 import './styles/main.css'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import 'vuetify/styles'
@@ -35,6 +37,24 @@ const vuetify = createVuetify({
         }
       }
     }
+  }
+})
+
+const session = useSessionStore()
+
+configureAuthSessionHandlers({
+  async refreshAccessToken() {
+    const tokens = await session.refreshSession()
+    return tokens?.access_token ?? null
+  },
+  async onSessionExpired() {
+    session.logout()
+    await router.push({
+      path: '/login',
+      query: {
+        redirect: router.currentRoute.value.fullPath
+      }
+    })
   }
 })
 

@@ -14,11 +14,9 @@
         <v-container fluid class="py-4 py-md-8">
           <v-container max-width="1480">
             <StorefrontHero
-              :featured-count="featuredCount"
               :query="query ?? ''"
               :resolved-storeview="resolvedStoreview"
               :store-config="storeConfig"
-              :total-locations="filteredLocations?.length ?? 0"
               @update:query="updateQuery"
               @navigate="navigateToSection"
             />
@@ -92,10 +90,6 @@ const {
   updateQuery,
   updateSelectedSlug
 } = await useStorefrontPage()
-
-const featuredCount = computed(
-  () => filteredLocations.value.filter((location) => location.featured).length
-)
 
 useHead(
   computed(() => ({
