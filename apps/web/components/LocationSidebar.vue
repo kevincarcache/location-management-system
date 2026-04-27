@@ -1,6 +1,11 @@
 <template>
-  <v-sheet rounded="lg" border color="background" class="h-100 pa-2 pa-md-3">
-    <div class="d-flex align-center justify-space-between px-2 px-md-3 pt-2 pb-4">
+  <v-sheet
+    rounded="lg"
+    border
+    color="background"
+    class="location-sidebar h-100 pa-2 pa-md-3"
+  >
+    <div class="d-flex align-center justify-space-between px-2 px-md-3 pt-2 pb-4 flex-shrink-0">
       <div>
         <div class="text-overline text-secondary">Registro</div>
         <div class="text-h6">{{ title }}</div>
@@ -10,9 +15,9 @@
       </v-chip>
     </div>
 
-    <v-divider class="mb-3" />
+    <v-divider class="mb-3 flex-shrink-0" />
 
-    <div>
+    <div class="location-sidebar__body">
       <v-alert
         v-if="!props.locations.length"
         type="info"
@@ -22,7 +27,7 @@
         No encontramos ubicaciones con ese criterio de búsqueda.
       </v-alert>
 
-      <v-list v-else nav bg-color="transparent" class="d-flex flex-column ga-2">
+      <v-list v-else nav bg-color="transparent" class="d-flex flex-column ga-2 pa-0">
         <v-list-item
           v-for="location in props.locations"
           :key="location.id"
@@ -102,3 +107,25 @@ function businessTypeLabel(value: string) {
   return businessTypeLabels[value] || value
 }
 </script>
+
+<style scoped>
+.location-sidebar {
+  display: flex;
+  flex-direction: column;
+  max-height: 560px;
+  min-height: 0;
+}
+
+.location-sidebar__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (min-width: 1280px) {
+  .location-sidebar {
+    max-height: 680px;
+  }
+}
+</style>

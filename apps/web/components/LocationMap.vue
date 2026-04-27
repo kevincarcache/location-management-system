@@ -19,6 +19,7 @@
         </v-sheet>
 
         <v-card
+          v-if="mapUnavailable"
           rounded="lg"
           border
           color="surface"
@@ -116,8 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useDisplay } from 'vuetify'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 
 import type { LocationSummary } from '@lms/types'
 
@@ -131,6 +131,7 @@ type MarkerInstance = {
   remove: () => void
   setLngLat: (coordinates: [number, number]) => void
 }
+type MapLibrePopup = InstanceType<MapLibreModule['Popup']>
 
 const props = withDefaults(defineProps<{
   locations: LocationSummary[]
@@ -148,13 +149,13 @@ const mapContainer = ref<HTMLDivElement | null>(null)
 const map = ref<any>(null)
 const maplibre = ref<MapLibreModule | null>(null)
 const mapUnavailable = ref(false)
+const selectedPopup = shallowRef<MapLibrePopup | null>(null)
 const markers = new Map<string, MarkerInstance>()
-const { mdAndUp } = useDisplay()
 
 const selectedLocation = computed(() =>
   props.locations.find((location) => location.slug === props.selectedSlug)
 )
-const mapHeight = computed(() => (mdAndUp.value ? 680 : 560))
+const mapHeight = 680
 
 async function initializeMap() {
   if (!import.meta.client || map.value || !mapContainer.value) {
@@ -194,9 +195,11 @@ async function initializeMap() {
     )
     syncMarkers()
     fitToLocations()
+    updateSelectedPopup()
   } catch (error) {
     console.warn('Map initialization failed, falling back to static location panel.', error)
     mapUnavailable.value = true
+    removeSelectedPopup()
     map.value?.remove()
     map.value = null
     maplibre.value = null
@@ -257,6 +260,80 @@ function focusSelectedLocation() {
   })
 }
 
+function createSelectedPopupContent(location: LocationSummary) {
+  const content = document.createElement('div')
+  content.className = 'location-map-popup'
+
+  const eyebrow = document.createElement('div')
+  eyebrow.className = 'location-map-popup__eyebrow'
+  eyebrow.textContent = `${location.city}, ${location.country}`
+
+  const title = document.createElement('div')
+  title.className = 'location-map-popup__title'
+  title.textContent = location.name
+
+  const description = document.createElement('p')
+  description.className = 'location-map-popup__description'
+  description.textContent =
+    location.descriptionShort || 'Selecciona la sucursal para ver mas detalles.'
+
+  const chips = document.createElement('div')
+  chips.className = 'location-map-popup__chips'
+
+  const typeChip = document.createElement('span')
+  typeChip.className = 'location-map-popup__chip location-map-popup__chip--secondary'
+  typeChip.textContent = businessTypeLabel(location.businessType)
+  chips.append(typeChip)
+
+  const statusChip = document.createElement('span')
+  statusChip.className = 'location-map-popup__chip'
+  statusChip.textContent = location.featured ? 'Lugar destacado' : 'Lugar activo'
+  chips.append(statusChip)
+
+  content.append(eyebrow, title, description, chips)
+
+  return content
+}
+
+function removeSelectedPopup() {
+  selectedPopup.value?.remove()
+  selectedPopup.value = null
+}
+
+function updateSelectedPopup() {
+  if (!map.value || !maplibre.value || !import.meta.client || mapUnavailable.value) {
+    removeSelectedPopup()
+    return
+  }
+
+  const location = selectedLocation.value
+
+  if (!location) {
+    removeSelectedPopup()
+    return
+  }
+
+  const coordinates: [number, number] = [location.longitude, location.latitude]
+
+  if (!selectedPopup.value) {
+    selectedPopup.value = new maplibre.value.Popup({
+      anchor: 'bottom',
+      closeButton: false,
+      closeOnClick: false,
+      className: 'location-map-popup-shell',
+      maxWidth: '320px',
+      offset: [0, -42]
+    })
+  }
+
+  const popup = selectedPopup.value
+
+  popup
+    .setLngLat(coordinates)
+    .setDOMContent(createSelectedPopupContent(location))
+    .addTo(map.value)
+}
+
 function fitToLocations() {
   if (!map.value || !maplibre.value || !props.locations.length || mapUnavailable.value) {
     return
@@ -292,6 +369,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  removeSelectedPopup()
   for (const marker of markers.values()) {
     marker.remove()
   }
@@ -304,6 +382,7 @@ watch(
   () => {
     syncMarkers()
     fitToLocations()
+    updateSelectedPopup()
   },
   { deep: true }
 )
@@ -317,6 +396,7 @@ watch(
     }
     syncMarkers()
     focusSelectedLocation()
+    updateSelectedPopup()
   },
   { immediate: true }
 )
@@ -333,3 +413,71 @@ function businessTypeLabel(value: string) {
   return businessTypeLabels[value] || value
 }
 </script>
+
+<style scoped>
+:deep(.location-map-popup-shell .maplibregl-popup-content) {
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(36, 30, 24, 0.16);
+  padding: 0;
+}
+
+:deep(.location-map-popup-shell .maplibregl-popup-tip) {
+  border-top-color: rgb(var(--v-theme-surface));
+}
+
+:deep(.location-map-popup) {
+  background: rgb(var(--v-theme-surface));
+  border-radius: 8px;
+  color: rgba(var(--v-theme-on-surface), 0.88);
+  max-width: 320px;
+  padding: 14px 16px 16px;
+}
+
+:deep(.location-map-popup__eyebrow) {
+  color: rgb(var(--v-theme-secondary));
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+:deep(.location-map-popup__title) {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+:deep(.location-map-popup__description) {
+  color: rgba(var(--v-theme-on-surface), 0.68);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+
+:deep(.location-map-popup__chips) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+:deep(.location-map-popup__chip) {
+  align-items: center;
+  border: 1px solid rgb(var(--v-theme-primary));
+  border-radius: 999px;
+  color: rgb(var(--v-theme-primary));
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-height: 24px;
+  padding: 2px 9px;
+}
+
+:deep(.location-map-popup__chip--secondary) {
+  background: rgba(var(--v-theme-secondary), 0.12);
+  border-color: transparent;
+  color: rgb(var(--v-theme-secondary));
+}
+</style>
