@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     geocoding_user_agent: str = "location-management-system/0.1"
     geocoding_timeout_seconds: int = 10
     geocoding_limit: int = 5
+    cors_origin_regex: str | None = r"https://([A-Za-z0-9-]+\.)+kevincarcache\.com"
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",
